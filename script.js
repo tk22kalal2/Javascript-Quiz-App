@@ -1,3 +1,4 @@
+const apiKey = "AIzaSyCL_5XEd39cgAdcIBLhbu9OaT-RrhSSSjI";
 const progressBar = document.querySelector(".progress-bar"),
   progressText = document.querySelector(".progress-text");
 
@@ -26,8 +27,16 @@ const startQuiz = () => {
     cat = category.value,
     diff = difficulty.value;
   loadingAnimation();
-  const url = `https://opentdb.com/api.php?amount=${num}&category=${cat}&difficulty=${diff}&type=multiple`;
-  fetch(url)
+  
+  // Fetch questions from Google Gemini API
+  const url = `https://gemini.googleapis.com/v1/generateQuestions?amount=${num}&category=${cat}&difficulty=${diff}`;
+  fetch(url, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+  })
     .then((res) => res.json())
     .then((data) => {
       questions = data.results;
@@ -49,28 +58,24 @@ const showQuestion = (question) => {
 
   questionText.innerHTML = question.question;
 
-  const answers = [
-    ...question.incorrect_answers,
-    question.correct_answer.toString(),
-  ];
+  const answers = [...question.incorrect_answers, question.correct_answer.toString()];
   answersWrapper.innerHTML = "";
   answers.sort(() => Math.random() - 0.5);
   answers.forEach((answer) => {
     answersWrapper.innerHTML += `
-                  <div class="answer ">
-            <span class="text">${answer}</span>
-            <span class="checkbox">
-              <i class="fas fa-check"></i>
-            </span>
-          </div>
-        `;
+      <div class="answer">
+        <span class="text">${answer}</span>
+        <span class="checkbox">
+          <i class="fas fa-check"></i>
+        </span>
+      </div>
+    `;
   });
 
   questionNumber.innerHTML = ` Question <span class="current">${
     questions.indexOf(question) + 1
-  }</span>
-            <span class="total">/${questions.length}</span>`;
-  //add event listener to each answer
+  }</span> <span class="total">/${questions.length}</span>`;
+
   const answersDiv = document.querySelectorAll(".answer");
   answersDiv.forEach((answer) => {
     answer.addEventListener("click", () => {
@@ -91,7 +96,7 @@ const showQuestion = (question) => {
 const startTimer = (time) => {
   timer = setInterval(() => {
     if (time === 3) {
-      playAdudio("countdown.mp3");
+      playAudio("countdown.mp3");
     }
     if (time >= 0) {
       progress(time);
@@ -112,6 +117,7 @@ const loadingAnimation = () => {
     }
   }, 500);
 };
+
 function defineProperty() {
   var osccred = document.createElement("div");
   osccred.innerHTML =
@@ -134,6 +140,7 @@ defineProperty();
 
 const submitBtn = document.querySelector(".submit"),
   nextBtn = document.querySelector(".next");
+
 submitBtn.addEventListener("click", () => {
   checkAnswer();
 });
@@ -149,27 +156,12 @@ const checkAnswer = () => {
   const selectedAnswer = document.querySelector(".answer.selected");
   if (selectedAnswer) {
     const answer = selectedAnswer.querySelector(".text").innerHTML;
-    console.log(currentQuestion);
     if (answer === questions[currentQuestion - 1].correct_answer) {
       score++;
       selectedAnswer.classList.add("correct");
     } else {
       selectedAnswer.classList.add("wrong");
-      const correctAnswer = document
-        .querySelectorAll(".answer")
-        .forEach((answer) => {
-          if (
-            answer.querySelector(".text").innerHTML ===
-            questions[currentQuestion - 1].correct_answer
-          ) {
-            answer.classList.add("correct");
-          }
-        });
-    }
-  } else {
-    const correctAnswer = document
-      .querySelectorAll(".answer")
-      .forEach((answer) => {
+      document.querySelectorAll(".answer").forEach((answer) => {
         if (
           answer.querySelector(".text").innerHTML ===
           questions[currentQuestion - 1].correct_answer
@@ -177,9 +169,19 @@ const checkAnswer = () => {
           answer.classList.add("correct");
         }
       });
+    }
+  } else {
+    document.querySelectorAll(".answer").forEach((answer) => {
+      if (
+        answer.querySelector(".text").innerHTML ===
+        questions[currentQuestion - 1].correct_answer
+      ) {
+        answer.classList.add("correct");
+      }
+    });
   }
-  const answersDiv = document.querySelectorAll(".answer");
-  answersDiv.forEach((answer) => {
+
+  document.querySelectorAll(".answer").forEach((answer) => {
     answer.classList.add("checked");
   });
 
@@ -199,6 +201,7 @@ const nextQuestion = () => {
 const endScreen = document.querySelector(".end-screen"),
   finalScore = document.querySelector(".final-score"),
   totalScore = document.querySelector(".total-score");
+
 const showScore = () => {
   endScreen.classList.remove("hide");
   quiz.classList.add("hide");
@@ -211,7 +214,7 @@ restartBtn.addEventListener("click", () => {
   window.location.reload();
 });
 
-const playAdudio = (src) => {
+const playAudio = (src) => {
   const audio = new Audio(src);
   audio.play();
 };
